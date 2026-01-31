@@ -140,7 +140,9 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
                  const accountIdentifier = String(row['H'] || '').trim();
                  const targetAccount = entAccounts.find(acc => acc.nickname === accountIdentifier || acc.accountNumber === accountIdentifier ) || entAccounts[0] || accounts[0];
                  
-                 const typeStr = String(row['D'] || 'שכירות').trim() as any;
+                 const typeStr = String(row['D'] || 'שכירות').trim();
+                 const leaseType = ['שכירות', 'דמי ניהול', 'אחר'].includes(typeStr) ? (typeStr as Lease['leaseType']) : 'שכירות';
+                 
                  const finalFrequency = freqMap[String(row['I'] || 'חודשי').trim()] || 'Monthly';
                  const linkageBase = Number(row['M']) || 0;
 
@@ -154,7 +156,7 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
                     accountId: targetAccount.id, 
                     tenantName: String(tenant), 
                     property: String(property), 
-                    leaseType: ['שכירות', 'דמי ניהול', 'אחר'].includes(typeStr) ? typeStr : 'שכירות',
+                    leaseType,
                     leasedSqm: sqm,
                     ratePerSqm: rate,
                     netAmount: amount, 

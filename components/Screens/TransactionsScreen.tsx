@@ -221,12 +221,17 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ transact
 
       if (sortConfig) {
           result.sort((a, b) => {
-              let valA: any = a[sortConfig.key as keyof Transaction];
-              let valB: any = b[sortConfig.key as keyof Transaction];
+              let valA: any;
+              let valB: any;
               if (sortConfig.key === 'entityName') {
                   valA = entities.find(e => e.id === a.entityId)?.name || '';
                   valB = entities.find(e => e.id === b.entityId)?.name || '';
+              } else {
+                  // Safe access casting key to string is generally safe here as we checked 'entityName'
+                  valA = a[sortConfig.key as keyof Transaction];
+                  valB = b[sortConfig.key as keyof Transaction];
               }
+              
               if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
               if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
               return 0;
