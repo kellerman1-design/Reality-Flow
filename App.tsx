@@ -16,7 +16,11 @@ import { GuaranteesScreen } from './components/Screens/GuaranteesScreen';
 import { BudgetScreen } from './components/Screens/BudgetScreen';
 import { SettingsScreen } from './components/Screens/SettingsScreen';
 import { PWAInstallPrompt } from './components/UI/PWAInstallPrompt';
-import { LayoutDashboard, Users, CreditCard, Banknote, Briefcase, Settings as SettingsIcon, LogOut, Activity, ClipboardList, Key, Shield, PieChart } from 'lucide-react';
+import { 
+  LayoutDashboard, Users, CreditCard, Banknote, Briefcase, 
+  Settings as SettingsIcon, LogOut, Activity, ClipboardList, 
+  Key, Shield, PieChart, Menu, X 
+} from 'lucide-react';
 
 const NavItem = ({ active, onClick, icon, label }: any) => (
   <button 
@@ -31,6 +35,7 @@ const NavItem = ({ active, onClick, icon, label }: any) => (
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>(['all']);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [entities, setEntities] = useState<Entity[]>(MOCK_ENTITIES);
   const [accounts, setAccounts] = useState<Account[]>([
@@ -86,17 +91,39 @@ const App: React.FC = () => {
 
   const currentSelectedEntityId = selectedEntityIds.length === 1 ? selectedEntityIds[0] : 'all';
 
+  const handleNavClick = (tab: string) => {
+    setActiveTab(tab);
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
       <PWAInstallPrompt />
       
-      <aside className="w-72 bg-slate-900 border-l border-slate-800 flex flex-col fixed h-full z-20 overflow-hidden">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300"
+            onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 right-0 z-50 w-72 bg-slate-900 border-l border-slate-800 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
+        
+        {/* Close Button (Mobile Only) */}
+        <div className="absolute top-4 left-4 md:hidden z-10">
+             <button onClick={() => setIsSidebarOpen(false)} className="p-2 bg-slate-800/50 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700">
+                <X size={20} />
+             </button>
+        </div>
+
         <div className="p-6 pb-4">
             <div className="flex items-center gap-4 mb-8 group cursor-default">
                 <div className="relative">
                     <div className="absolute -inset-2 bg-indigo-500/20 rounded-full blur-xl group-hover:bg-indigo-500/40 transition duration-700"></div>
                     <div className="relative bg-slate-800/40 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex items-center justify-center min-w-[56px] min-h-[56px]">
-                        {/* Inline SVG Logo - Ensures it always loads */}
+                        {/* Inline SVG Logo - Original Gradient Style */}
                         <svg viewBox="0 0 100 100" className="w-11 h-11" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                                 <linearGradient id="logo_grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
@@ -118,17 +145,17 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 space-y-2 px-4 overflow-y-auto custom-scrollbar pb-4">
-            <NavItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20}/>} label={STRINGS.dashboard} />
-            <NavItem active={activeTab === 'entities'} onClick={() => setActiveTab('entities')} icon={<Users size={20}/>} label={STRINGS.entities} />
-            <NavItem active={activeTab === 'accounts'} onClick={() => setActiveTab('accounts')} icon={<Banknote size={20}/>} label={STRINGS.accounts} />
-            <NavItem active={activeTab === 'loans'} onClick={() => setActiveTab('loans')} icon={<CreditCard size={20}/>} label="ניהול הלוואות" />
-            <NavItem active={activeTab === 'guarantees'} onClick={() => setActiveTab('guarantees')} icon={<Shield size={20}/>} label="ערבויות" />
-            <NavItem active={activeTab === 'leases'} onClick={() => setActiveTab('leases')} icon={<Key size={20}/>} label="הכנסות משכירות" />
-            <NavItem active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} icon={<Activity size={20}/>} label={STRINGS.transactions} />
-            <NavItem active={activeTab === 'budget'} onClick={() => setActiveTab('budget')} icon={<PieChart size={20}/>} label={STRINGS.budget} />
-            <NavItem active={activeTab === 'tasks'} onClick={() => setActiveTab('tasks')} icon={<ClipboardList size={20}/>} label={STRINGS.tasks} />
+            <NavItem active={activeTab === 'dashboard'} onClick={() => handleNavClick('dashboard')} icon={<LayoutDashboard size={20}/>} label={STRINGS.dashboard} />
+            <NavItem active={activeTab === 'entities'} onClick={() => handleNavClick('entities')} icon={<Users size={20}/>} label={STRINGS.entities} />
+            <NavItem active={activeTab === 'accounts'} onClick={() => handleNavClick('accounts')} icon={<Banknote size={20}/>} label={STRINGS.accounts} />
+            <NavItem active={activeTab === 'loans'} onClick={() => handleNavClick('loans')} icon={<CreditCard size={20}/>} label="ניהול הלוואות" />
+            <NavItem active={activeTab === 'guarantees'} onClick={() => handleNavClick('guarantees')} icon={<Shield size={20}/>} label="ערבויות" />
+            <NavItem active={activeTab === 'leases'} onClick={() => handleNavClick('leases')} icon={<Key size={20}/>} label="הכנסות משכירות" />
+            <NavItem active={activeTab === 'transactions'} onClick={() => handleNavClick('transactions')} icon={<Activity size={20}/>} label={STRINGS.transactions} />
+            <NavItem active={activeTab === 'budget'} onClick={() => handleNavClick('budget')} icon={<PieChart size={20}/>} label={STRINGS.budget} />
+            <NavItem active={activeTab === 'tasks'} onClick={() => handleNavClick('tasks')} icon={<ClipboardList size={20}/>} label={STRINGS.tasks} />
             <div className="my-4 border-t border-slate-800"></div>
-            <NavItem active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<SettingsIcon size={20}/>} label={STRINGS.settings} />
+            <NavItem active={activeTab === 'settings'} onClick={() => handleNavClick('settings')} icon={<SettingsIcon size={20}/>} label={STRINGS.settings} />
         </nav>
 
         <div className="p-4 border-t border-slate-800 mt-auto bg-slate-900">
@@ -149,9 +176,17 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 mr-72 p-8 max-w-[calc(100vw-18rem)] overflow-x-hidden overflow-y-auto h-screen">
-         <header className="flex justify-between items-center mb-8 shrink-0">
-            <h2 className="text-2xl font-bold text-slate-100">
+      {/* Main Content Area */}
+      <main className="flex-1 w-full md:mr-72 p-4 md:p-8 md:max-w-[calc(100vw-18rem)] overflow-x-hidden overflow-y-auto h-screen transition-all duration-300">
+         <header className="flex items-center gap-4 mb-8 shrink-0">
+            <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="md:hidden p-2 rounded-xl bg-slate-800 text-slate-400 hover:bg-indigo-600 hover:text-white transition-all shadow-lg border border-slate-700"
+                title="תפריט"
+            >
+                <Menu size={20} />
+            </button>
+            <h2 className="text-2xl font-bold text-slate-100 flex-1">
                 {activeTab === 'dashboard' && STRINGS.dashboard}
                 {activeTab === 'entities' && STRINGS.entities}
                 {activeTab === 'accounts' && STRINGS.accounts}
