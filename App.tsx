@@ -96,11 +96,18 @@ const App: React.FC = () => {
                 <div className="relative">
                     <div className="absolute -inset-2 bg-indigo-500/20 rounded-full blur-xl group-hover:bg-indigo-500/40 transition duration-700"></div>
                     <div className="relative bg-slate-800/40 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex items-center justify-center min-w-[56px] min-h-[56px]">
-                        <img 
-                          src="/logo.png?v=4" 
-                          alt="REALITY FLOW" 
-                          className="w-11 h-11 object-contain z-10"
-                        />
+                        {/* Inline SVG Logo - Ensures it always loads */}
+                        <svg viewBox="0 0 100 100" className="w-11 h-11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="logo_grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop stopColor="#6366F1" />
+                                    <stop offset="1" stopColor="#A855F7" />
+                                </linearGradient>
+                            </defs>
+                            <rect width="100" height="100" rx="24" fill="url(#logo_grad)" />
+                            <path d="M28 66L42 42L56 58L72 34" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                            <circle cx="72" cy="34" r="5" fill="white" />
+                        </svg>
                     </div>
                 </div>
                 <div className="flex flex-col">

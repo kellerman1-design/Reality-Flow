@@ -50,11 +50,18 @@ export const PWAInstallPrompt: React.FC = () => {
 
         {/* Logo Container - Transparent/Glass */}
         <div className="shrink-0 bg-slate-800/50 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-xl w-16 h-16 flex items-center justify-center relative overflow-hidden">
-            <img 
-              src="/logo.png?v=4" 
-              alt="App Logo" 
-              className="w-12 h-12 object-contain z-10" 
-            />
+             {/* Inline SVG Logo - Ensures it always loads */}
+             <svg viewBox="0 0 100 100" className="w-12 h-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="pwa_logo_grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#6366F1" />
+                        <stop offset="1" stopColor="#A855F7" />
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="24" fill="url(#pwa_logo_grad)" />
+                <path d="M28 66L42 42L56 58L72 34" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="72" cy="34" r="5" fill="white" />
+            </svg>
         </div>
 
         {/* Content */}
