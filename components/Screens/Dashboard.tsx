@@ -627,7 +627,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
 
             const dayDate = new Date(day.date);
             Object.entries(weightedMap).forEach(([entId, weight]) => {
-                if (weight <= 0) return;
+                if ((weight as number) <= 0) return;
                 const entName = entities.find(e => e.id === entId)?.name || '';
                 
                 // Flow Alerts (Credit Balances & Injections)
