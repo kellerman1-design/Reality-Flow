@@ -101,9 +101,9 @@ export const LoansScreen: React.FC<LoansScreenProps> = ({ loans, setLoans, entit
     setLoans(prev => prev.map(l => l.id === id ? { ...l, isActive: !l.isActive } : l));
   };
 
-  const handleFileSelect = async (e: any) => { if (e.target.files) { const files = Array.from(e.target.files); const processed = await Promise.all(files.map(processFile)); setNewAttachments(prev => [...prev, ...processed] as Attachment[]); } };
-  const handleDragOver = (e: any) => { e.preventDefault(); setIsDragging(true); };
-  const handleDrop = async (e: any) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files) { const processed = await Promise.all(Array.from(e.dataTransfer.files).map(processFile)); setNewAttachments(prev => [...prev, ...processed] as Attachment[]); } };
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) { const files = Array.from(e.target.files); const processed = await Promise.all(files.map(processFile)); setNewAttachments(prev => [...prev, ...processed] as Attachment[]); } };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDrop = async (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files) { const processed = await Promise.all(Array.from(e.dataTransfer.files).map(processFile)); setNewAttachments(prev => [...prev, ...processed] as Attachment[]); } };
   const removeNewAttachment = (index: number) => { setNewAttachments(prev => prev.filter((_, i) => i !== index)); };
   const removeExistingAttachment = (attId: string) => { setFormData(prev => ({ ...prev, attachments: prev.attachments?.filter(a => a.id !== attId) })); };
 
