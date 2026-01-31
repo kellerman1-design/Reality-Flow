@@ -141,6 +141,7 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
                  const targetAccount = entAccounts.find(acc => acc.nickname === accountIdentifier || acc.accountNumber === accountIdentifier ) || entAccounts[0] || accounts[0];
                  
                  const typeStr = String(row['D'] || 'שכירות').trim();
+                 // Safer check for leaseType to satisfy TypeScript
                  const leaseType = ['שכירות', 'דמי ניהול', 'אחר'].includes(typeStr) ? (typeStr as Lease['leaseType']) : 'שכירות';
                  
                  const finalFrequency = freqMap[String(row['I'] || 'חודשי').trim()] || 'Monthly';

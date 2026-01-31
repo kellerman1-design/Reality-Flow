@@ -227,9 +227,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ transact
                   valA = entities.find(e => e.id === a.entityId)?.name || '';
                   valB = entities.find(e => e.id === b.entityId)?.name || '';
               } else {
-                  // Safe access casting key to string is generally safe here as we checked 'entityName'
-                  valA = a[sortConfig.key as keyof Transaction];
-                  valB = b[sortConfig.key as keyof Transaction];
+                  // Type assertion fix for Vercel build
+                  const key = sortConfig.key as keyof Transaction;
+                  valA = a[key];
+                  valB = b[key];
               }
               
               if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
