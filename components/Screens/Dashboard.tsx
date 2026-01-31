@@ -65,7 +65,9 @@ const getConsolidatedWeight = (id: string, entities: Entity[]): number => {
     let current = entities.find(e => e.id === id);
     while (current && current.parentId) {
         weight *= (current.ownershipPercentage / 100);
-        current = entities.find(e => e.id === current.parentId);
+        // FIX: Capture parentId separately to satisfy strict undefined check inside find()
+        const parentId = current.parentId;
+        current = entities.find(e => e.id === parentId);
     }
     return weight;
 };

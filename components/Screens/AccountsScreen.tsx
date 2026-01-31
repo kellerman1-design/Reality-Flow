@@ -77,13 +77,25 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ accounts, setAcc
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const bstr = evt.target?.result; const wb = XLSX.read(bstr, { type: 'binary' }); const ws = wb.Sheets[wb.SheetNames[0]]; const data = XLSX.utils.sheet_to_json(ws);
+        const bstr = evt.target?.result; 
+        const wb = XLSX.read(bstr, { type: 'binary' }); 
+        const ws = wb.Sheets[wb.SheetNames[0]]; 
+        // FIX: Explicitly type data as any[] to allow string indexing
+        const data: any[] = XLSX.utils.sheet_to_json(ws);
+        
         let updatedCount = 0;
         setAccounts(prevAccounts => prevAccounts.map(acc => {
-            const row = data.find((r: any) => String(r['מספר חשבון']).trim() === String(acc.accountNumber).trim());
+            const row = data.find((r: any) => String(r['מספר חשבון'] || '').trim() === String(acc.accountNumber).trim());
             if (row) {
                 updatedCount++;
-                return { ...acc, openingBalance: typeof row['יתרה'] === 'number' ? row['יתרה'] : acc.openingBalance, creditLimit: typeof row['מסגרת אשראי'] === 'number' ? row['מסגרת אשראי'] : acc.creditLimit, currentCreditUtil: typeof row['שיעור ניצול'] === 'number' ? row['שיעור ניצול'] : acc.currentCreditUtil, guaranteeLimit: typeof row['מסגרת ערבויות'] === 'number' ? row['מסגרת ערבויות'] : acc.guaranteeLimit, manualGuaranteeUtil: typeof row['ניצול ערבויות'] === 'number' ? row['ניצול ערבויות'] : acc.manualGuaranteeUtil };
+                return { 
+                    ...acc, 
+                    openingBalance: typeof row['יתרה'] === 'number' ? row['יתרה'] : acc.openingBalance, 
+                    creditLimit: typeof row['מסגרת אשראי'] === 'number' ? row['מסגרת אשראי'] : acc.creditLimit, 
+                    currentCreditUtil: typeof row['שיעור ניצול'] === 'number' ? row['שיעור ניצול'] : acc.currentCreditUtil, 
+                    guaranteeLimit: typeof row['מסגרת ערבויות'] === 'number' ? row['מסגרת ערבויות'] : acc.guaranteeLimit, 
+                    manualGuaranteeUtil: typeof row['ניצול ערבויות'] === 'number' ? row['ניצול ערבויות'] : acc.manualGuaranteeUtil 
+                };
             }
             return acc;
         }));
