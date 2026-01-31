@@ -1,14 +1,15 @@
+
 {
   "short_name": "RealityFlow",
   "name": "REALITY FLOW",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "/logo.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo.png",
+      "src": "/logo.png",
       "type": "image/png",
       "sizes": "512x512"
     }
