@@ -97,7 +97,7 @@ const App: React.FC = () => {
                     <div className="absolute -inset-2 bg-indigo-500/20 rounded-full blur-xl group-hover:bg-indigo-500/40 transition duration-700"></div>
                     <div className="relative bg-slate-800/40 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex items-center justify-center min-w-[56px] min-h-[56px]">
                         <img 
-                          src="/logo.png" 
+                          src="/logo.png?v=4" 
                           alt="REALITY FLOW" 
                           className="w-11 h-11 object-contain z-10"
                         />

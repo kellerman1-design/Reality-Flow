@@ -51,7 +51,7 @@ export const PWAInstallPrompt: React.FC = () => {
         {/* Logo Container - Transparent/Glass */}
         <div className="shrink-0 bg-slate-800/50 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-xl w-16 h-16 flex items-center justify-center relative overflow-hidden">
             <img 
-              src="/logo.png" 
+              src="/logo.png?v=4" 
               alt="App Logo" 
               className="w-12 h-12 object-contain z-10" 
             />
