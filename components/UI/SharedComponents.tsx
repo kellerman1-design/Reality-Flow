@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Calendar as CalendarIcon } from 'lucide-react';
 
 // --- Card ---
 export const Card: React.FC<{ children: React.ReactNode; className?: string; title?: string }> = ({ children, className = '', title }) => (
@@ -36,15 +36,30 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', c
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
-export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => (
-  <div className="flex flex-col gap-1 w-full">
-    {label && <label className="text-xs text-slate-400 font-medium">{label}</label>}
-    <input 
-      className={`bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all ${className}`}
-      {...props} 
-    />
-  </div>
-);
+/**
+ * Enhanced Input component.
+ * For type="date", it ensures the native picker (scroller on mobile) is triggered easily.
+ */
+export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => {
+  const isDate = props.type === 'date';
+  
+  return (
+    <div className="flex flex-col gap-1 w-full text-right">
+      {label && <label className="text-xs text-slate-400 font-medium mb-1">{label}</label>}
+      <div className="relative">
+        <input 
+          className={`bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-600 w-full ${isDate ? 'cursor-pointer' : ''} ${className}`}
+          {...props} 
+        />
+        {isDate && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+            <CalendarIcon size={16} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // --- Select ---
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -78,11 +93,6 @@ interface MultiSelectProps {
     className?: string;
 }
 
-/**
- * MultiSelect component tailored for RTL.
- * Checkboxes are on the right, text on the left.
- * Scrollbar is forced to the right side.
- */
 export const MultiSelect: React.FC<MultiSelectProps> = ({ label, options, selectedValues, onChange, placeholder = "בחר...", className = "" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -139,9 +149,9 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ label, options, select
             {isOpen && (
                 <div 
                   className="absolute top-full mt-2 right-0 min-w-full w-max max-w-[450px] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-[100] py-2 max-h-80 overflow-y-auto overflow-x-hidden animate-in fade-in slide-in-from-top-2 duration-200"
-                  style={{ direction: 'ltr' }} // Force scrollbar to the right side
+                  style={{ direction: 'ltr' }} 
                 >
-                    <div style={{ direction: 'rtl' }}> {/* Restore content to RTL */}
+                    <div style={{ direction: 'rtl' }}> 
                         {options.map(option => {
                             const isSelected = selectedValues.includes(option.value);
                             return (
@@ -150,7 +160,6 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ label, options, select
                                     onClick={() => toggleOption(option.value)}
                                     className={`w-full text-right px-4 py-2.5 text-sm flex items-center gap-3 transition-colors ${isSelected ? 'bg-indigo-600/20 text-indigo-300' : 'text-slate-300 hover:bg-slate-800'}`}
                                 >
-                                    {/* Checkbox on the right in RTL flex-row */}
                                     <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-600 bg-slate-950'}`}>
                                         {isSelected && <Check size={12} className="text-white" />}
                                     </div>

@@ -2,6 +2,9 @@
 import { Attachment, AppState, Entity, Account, Transaction, Loan, Lease, Guarantee, Task, Budget, GlobalSettings } from './types';
 import * as XLSX from 'xlsx';
 
+/**
+ * Formats a number as a currency string with NIS symbol and handles negatives with parentheses.
+ */
 export const formatCurrency = (amount: number): string => {
   const absAmount = Math.abs(amount);
   const formatted = new Intl.NumberFormat('he-IL', {
@@ -13,8 +16,16 @@ export const formatCurrency = (amount: number): string => {
   return amount < 0 ? `(${formatted})` : formatted;
 };
 
+/**
+ * Formats a YYYY-MM-DD string to a readable Hebrew date (DD/MM/YYYY) safely.
+ */
 export const formatDate = (dateStr: string): string => {
   if (!dateStr) return '-';
+  // Split to avoid timezone shifts from new Date(string)
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
   return new Date(dateStr).toLocaleDateString('he-IL');
 };
 

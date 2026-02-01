@@ -48,6 +48,21 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #475569; 
       }
+
+      /* Native Date Picker Enhancements */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1); /* White icon for dark theme */
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+      input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+      }
+      /* Ensure date input text stays visible and right-aligned */
+      input[type="date"] {
+        text-align: right;
+      }
     </style>
   <script type="importmap">
 {

@@ -3,14 +3,32 @@ import { addDays, addMonths, formatCurrency } from './utils';
 import { AppState, DailySimulationResult, Loan, Lease, Transaction, Frequency, Entity, GlobalSettings } from './types';
 
 /**
+ * Safely parses a YYYY-MM-DD string into a local Date object (at 00:00:00)
+ * to avoid UTC shift issues that occur with new Date(dateStr).
+ */
+const parseLocalDate = (dateStr: string): Date => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+};
+
+/**
+ * Formats a Date object back to a local YYYY-MM-DD string.
+ */
+const toLocalDateString = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+/**
  * Returns the correct prime rate for a given date based on settings.
  */
 const getPrimeRateAtDate = (date: Date, settings: GlobalSettings): number => {
     if (!settings.primeRateChangeDate || settings.prevPrimeRate === undefined) {
         return settings.primeRate;
     }
-    const changeDate = new Date(settings.primeRateChangeDate);
-    changeDate.setHours(0, 0, 0, 0);
+    const changeDate = parseLocalDate(settings.primeRateChangeDate);
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
 
@@ -85,8 +103,8 @@ const preGenerateLoanTransactions = (loans: Loan[], startDate: Date, days: numbe
     const activeLoans = loans.filter(l => l.isActive);
 
     activeLoans.forEach(loan => {
-        const loanStart = new Date(loan.startDate);
-        const loanEnd = new Date(loan.endDate);
+        const loanStart = parseLocalDate(loan.startDate);
+        const loanEnd = parseLocalDate(loan.endDate);
         
         if (loanStart >= startDate && loanStart <= simulationEndDate) {
              generated.push({
@@ -132,7 +150,7 @@ const preGenerateLoanTransactions = (loans: Loan[], startDate: Date, days: numbe
                     type: 'expense',
                     category: 'בנקים',
                     description: `ריבית הלוואה: ${loan.name}`,
-                    date: payDate.toISOString(),
+                    date: toLocalDateString(payDate),
                     amount: interestAmount,
                     includesVat: false,
                     isRecurring: false,
@@ -153,7 +171,7 @@ const preGenerateLoanTransactions = (loans: Loan[], startDate: Date, days: numbe
                         type: 'expense',
                         category: 'החזר הלוואות',
                         description: `פירעון קרן: ${loan.name}${isLast ? ' (סופי)' : ''}`,
-                        date: payDate.toISOString(),
+                        date: toLocalDateString(payDate),
                         amount: amountToRepay,
                         includesVat: false,
                         isRecurring: false,
@@ -174,8 +192,8 @@ const preGenerateLeaseTransactions = (leases: Lease[], simStartDate: Date, days:
     const simEndDate = addDays(simStartDate, days);
 
     leases.forEach(lease => {
-        const leaseStart = new Date(lease.startDate);
-        const leaseEnd = new Date(lease.endDate);
+        const leaseStart = parseLocalDate(lease.startDate);
+        const leaseEnd = parseLocalDate(lease.endDate);
         if (leaseEnd < simStartDate || leaseStart > simEndDate) return;
 
         let adjustedBaseAmount = (lease.linkageIndexBase && lease.linkageIndexBase > 0 && currentCPI > 0) 
@@ -211,7 +229,7 @@ const preGenerateLeaseTransactions = (leases: Lease[], simStartDate: Date, days:
                     type: 'income',
                     category: 'שכירות',
                     description: `שכירות יחסית: ${lease.tenantName} (${lease.property})`,
-                    date: leaseStart.toISOString(),
+                    date: toLocalDateString(leaseStart),
                     amount: proRataAmount,
                     includesVat: lease.includesVat,
                     isRecurring: false,
@@ -236,7 +254,7 @@ const preGenerateLeaseTransactions = (leases: Lease[], simStartDate: Date, days:
                     type: 'income',
                     category: 'שכירות',
                     description: `שכירות: ${lease.tenantName} (${lease.property})`,
-                    date: currentPaymentDate.toISOString(),
+                    date: toLocalDateString(currentPaymentDate),
                     amount: adjustedBaseAmount,
                     includesVat: lease.includesVat,
                     isRecurring: false,
@@ -310,8 +328,7 @@ export const runSimulation = (state: AppState, daysToRun: number = 730): DailySi
   
   allInitialTxs.forEach(tx => {
       if (!tx || !tx.isActive || !entityDailyTxs[tx.entityId]) return;
-      const txStart = new Date(tx.date);
-      txStart.setHours(0,0,0,0);
+      const txStart = parseLocalDate(tx.date);
       
       const applyTx = (dayIdx: number) => {
           if (dayIdx < 0 || dayIdx >= daysToRun) return;
@@ -323,7 +340,8 @@ export const runSimulation = (state: AppState, daysToRun: number = 730): DailySi
       };
 
       if (!tx.isRecurring) {
-          const diff = Math.floor((txStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          // Calculation based on local time difference
+          const diff = Math.round((txStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           applyTx(diff);
       } else {
           for (let i = 0; i < daysToRun; i++) {
@@ -332,11 +350,19 @@ export const runSimulation = (state: AppState, daysToRun: number = 730): DailySi
               const dayOfMonth = curDate.getDate();
               const isLastDay = addDays(curDate, 1).getDate() === 1;
               const mode = tx.recurringDayMode || 'SameAsStart';
-              let dayMatch = (mode === 'LastDay' && isLastDay) || (mode === 'SameAsStart' && dayOfMonth === txStart.getDate()) || (mode === 'Specific' && dayOfMonth === (tx.dayInMonth || 1));
+              
+              // dayMatch relies on the Date object's day in local time. 
+              // Since curDate is derived from 'today' at 00:00:00 local, getDate() is accurate.
+              let dayMatch = (mode === 'LastDay' && isLastDay) || 
+                             (mode === 'SameAsStart' && dayOfMonth === txStart.getDate()) || 
+                             (mode === 'Specific' && dayOfMonth === (tx.dayInMonth || 1));
               
               if (dayMatch) {
                   const monthsDiff = (curDate.getFullYear() - txStart.getFullYear()) * 12 + (curDate.getMonth() - txStart.getMonth());
-                  let freqMatch = (tx.frequency === 'Monthly') || (tx.frequency === 'Quarterly' && monthsDiff % 3 === 0) || (tx.frequency === 'SemiAnnually' && monthsDiff % 6 === 0) || (tx.frequency === 'Annually' && monthsDiff % 12 === 0);
+                  let freqMatch = (tx.frequency === 'Monthly') || 
+                                  (tx.frequency === 'Quarterly' && monthsDiff % 3 === 0) || 
+                                  (tx.frequency === 'SemiAnnually' && monthsDiff % 6 === 0) || 
+                                  (tx.frequency === 'Annually' && monthsDiff % 12 === 0);
                   if (freqMatch) applyTx(i);
               }
           }
@@ -378,7 +404,7 @@ export const runSimulation = (state: AppState, daysToRun: number = 730): DailySi
   for (let i = 0; i < daysToRun; i++) {
     const currentDate = addDays(today, i);
     const dayOfMonth = currentDate.getDate();
-    const currentDateStr = currentDate.toISOString().split('T')[0];
+    const currentDateStr = toLocalDateString(currentDate);
     const dayTransactions: DailySimulationResult['transactions'] = [];
     const alerts: string[] = [];
 
@@ -396,7 +422,7 @@ export const runSimulation = (state: AppState, daysToRun: number = 730): DailySi
              let settlementDateObj = new Date(currentDate);
              if (vatToSettle > 0) settlementDateObj.setDate(22); 
              else { settlementDateObj = addMonths(currentDate, 1); settlementDateObj.setDate(15); } 
-             vatSettlementQueue.push({ settlementDate: settlementDateObj.toISOString().split('T')[0], amount: -vatToSettle, entityId: ent.id });
+             vatSettlementQueue.push({ settlementDate: toLocalDateString(settlementDateObj), amount: -vatToSettle, entityId: ent.id });
          }
          entityVatAccumulated[ent.id] = 0;
          entityMonthRevenue[ent.id] = 0;
