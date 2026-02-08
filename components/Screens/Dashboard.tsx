@@ -4,7 +4,7 @@ import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
 import { Card, KPICard, Modal, MultiSelect, Select } from '../UI/SharedComponents';
 import { DailySimulationResult, Entity, Account, Task, Loan, Lease, Guarantee, Transaction, GlobalSettings } from '../../types';
 import { formatCurrency, formatDate, addDays } from '../../utils';
-import { TrendingUp, Wallet, Activity, Table, CreditCard, Briefcase, Bell, Calendar, AlertTriangle, Coins, ArrowDownRight, ShieldAlert, ArrowRightLeft, ClipboardList, Shield, Key, Landmark, Filter, ShoppingCart, Tag, Info, Zap } from 'lucide-react';
+import { TrendingUp, Wallet, Activity, Table, CreditCard, Briefcase, Bell, Calendar, AlertTriangle, Coins, ArrowDownRight, ShieldAlert, ArrowRightLeft, ClipboardList, Shield, Key, Landmark, Filter, ShoppingCart, Tag, Info, Zap, Send, Loader2, Share2 } from 'lucide-react';
 
 interface DashboardProps {
   simulationResults: DailySimulationResult[];
@@ -65,7 +65,6 @@ const getConsolidatedWeight = (id: string, entities: Entity[]): number => {
     let current = entities.find(e => e.id === id);
     while (current && current.parentId) {
         weight *= (current.ownershipPercentage / 100);
-        // FIX: Capture parentId separately to satisfy strict undefined check inside find()
         const parentId = current.parentId;
         current = entities.find(e => e.id === parentId);
     }
@@ -339,12 +338,21 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
                         ))}
                     </div>
                 </div>
-                <div className="overflow-x-auto w-full custom-scrollbar">
-                    <table className="min-w-full text-sm text-right border-collapse">
-                        <thead>
+                {/* To show scrollbar on the right in RTL: Use dir="ltr" on container and dir="rtl" on table */}
+                <div 
+                    className="overflow-auto w-full max-h-[600px] custom-scrollbar" 
+                    dir="ltr" 
+                    style={{ scrollbarGutter: 'stable' }}
+                >
+                    <table className="min-w-full text-sm text-right border-separate border-spacing-0" dir="rtl">
+                        <thead className="sticky top-0 z-40">
                             <tr>
-                                <th className="p-4 bg-slate-900 text-slate-400 font-medium sticky right-0 z-20 w-56 border-b border-slate-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] whitespace-nowrap">תקופה</th>
-                                {displayData.map(m => <th key={m.key} className="p-4 bg-slate-900/90 text-white font-bold min-w-[120px] border-b border-slate-800 text-center whitespace-nowrap">{m.label}</th>)}
+                                <th className="p-4 bg-slate-900 text-slate-400 font-bold sticky right-0 top-0 z-50 w-56 border-b border-slate-800 shadow-[2px_2px_10px_rgba(0,0,0,0.4)] whitespace-nowrap">תקופה</th>
+                                {displayData.map(m => (
+                                    <th key={m.key} className="p-4 bg-slate-900 text-white font-bold min-w-[120px] border-b border-slate-800 text-center whitespace-nowrap shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+                                        {m.label}
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
@@ -566,6 +574,7 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
 export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entities, accounts, tasks, loans, leases, guarantees, settings, selectedEntityIds, setSelectedEntityIds }) => {
     const [chartRange, setChartRange] = useState<number>(180); 
     const [alertFilter, setAlertFilter] = useState<AlertCategory>('all');
+    const [isSyncingTeams, setIsSyncingTeams] = useState(false);
 
     const weightedMap = useMemo(() => {
         const weights: Record<string, number> = {};
@@ -632,7 +641,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
                 if ((weight as number) <= 0) return;
                 const entName = entities.find(e => e.id === entId)?.name || '';
                 
-                // Flow Alerts (Credit Balances & Injections)
                 if (dayDate <= next7Days) {
                     const entAccounts = accounts.filter(a => a.entityId === entId);
                     entAccounts.forEach(acc => {
@@ -643,7 +651,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
                     });
                 }
 
-                // CAPITAL INJECTIONS SYNC (From Transactions Screen Logic)
                 if (dayDate <= next90Days) {
                     day.transactions.forEach(t => {
                         if (t.entityId === entId && (t.description.includes('הזרמת הון') || t.category === 'הון בעלים' || t.description.includes('הזרמה לבת')) && t.amount > 0) {
@@ -693,7 +700,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
             });
         });
 
-        // Add Upcoming Tasks (Within 7 days)
         tasks.forEach(task => {
             if (!task.isCompleted && activeEntitySet.has(task.entityId)) {
                 const d = new Date(task.dueDate);
@@ -707,7 +713,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
             }
         });
 
-        // Add Expiring Loans (Within 30 days)
         loans.forEach(loan => {
             if (activeEntitySet.has(loan.entityId)) {
                 const d = new Date(loan.endDate);
@@ -763,6 +768,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
         return allAlerts.filter(a => a.category === alertFilter);
     }, [allAlerts, alertFilter]);
 
+    const syncToTeams = async () => {
+        if (!settings.teamsWebhookUrl) {
+            alert('נא להגדיר Webhook URL במסך ההגדרות תחילה.');
+            return;
+        }
+
+        const criticalAlerts = allAlerts.filter(a => a.type === 'critical' || a.category === 'flow');
+        if (criticalAlerts.length === 0) {
+            alert('אין התראות קריטיות לסנכרון כרגע.');
+            return;
+        }
+
+        setIsSyncingTeams(true);
+        try {
+            const payload = {
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "themeColor": "4F46E5",
+                "summary": "Reality Flow - התראות תזרים דחופות",
+                "sections": [{
+                    "activityTitle": "Reality Flow - התראות מערכת",
+                    "activitySubtitle": `נשלח ב-${new Date().toLocaleDateString('he-IL')} ${new Date().toLocaleTimeString('he-IL')}`,
+                    "activityImage": "https://realityflow.app/logo.png",
+                    "facts": criticalAlerts.slice(0, 5).map(a => ({
+                        "name": formatDate(a.date),
+                        "value": a.message
+                    })),
+                    "markdown": true
+                }],
+                "potentialAction": [{
+                    "@type": "OpenUri",
+                    "name": "פתח את המערכת",
+                    "targets": [{ "os": "default", "uri": window.location.href }]
+                }]
+            };
+
+            const response = await fetch(settings.teamsWebhookUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Teams webhooks often require no-cors or simple content-types
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            alert('התראות נשלחו בהצלחה ל-Microsoft Teams!');
+        } catch (error) {
+            console.error('Teams Sync Error:', error);
+            alert('שגיאה בשליחת ההתראות. וודא שה-URL תקין.');
+        } finally {
+            setIsSyncingTeams(false);
+        }
+    };
+
     if (!chartData?.length) return <div className="p-20 text-center text-slate-500">טוען נתונים...</div>;
 
     const filterOptions = [
@@ -787,7 +844,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entitie
 
              <div className="bg-slate-900 border-l-4 border-l-amber-500 rounded-r-xl shadow-lg overflow-hidden">
                  <div className="p-3 bg-slate-950/50 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                     <h3 className="font-bold text-slate-200 flex items-center gap-2"><Bell className="text-amber-500" size={18} /> מרכז התראות</h3>
+                     <div className="flex items-center gap-2">
+                        <Bell className="text-amber-500" size={18} />
+                        <h3 className="font-bold text-slate-200">מרכז התראות</h3>
+                        {settings.teamsWebhookUrl && (
+                            <button 
+                                onClick={syncToTeams}
+                                disabled={isSyncingTeams}
+                                className="mr-4 flex items-center gap-1.5 px-3 py-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-full text-[10px] font-black hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 group"
+                            >
+                                {isSyncingTeams ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />}
+                                <span>סנכרן לטימס</span>
+                            </button>
+                        )}
+                     </div>
                      <div className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
                          {filterOptions.map(opt => (
                              <button key={opt.id} onClick={() => setAlertFilter(opt.id as any)} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all whitespace-nowrap ${alertFilter === opt.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}>

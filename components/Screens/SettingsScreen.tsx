@@ -2,7 +2,7 @@
 import React, { useRef } from 'react';
 import { Card, Input, Button } from '../UI/SharedComponents';
 import { GlobalSettings, AppState } from '../../types';
-import { Save, Upload, FileSpreadsheet, RefreshCw, TrendingUp, Calendar } from 'lucide-react';
+import { Save, Upload, FileSpreadsheet, RefreshCw, TrendingUp, Calendar, Send, MessageSquare } from 'lucide-react';
 import { exportFullStateToExcel, importFullStateFromExcel } from '../../utils';
 
 interface SettingsScreenProps {
@@ -64,7 +64,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, setSet
               />
           </div>
 
-          <div className="bg-slate-800/40 border border-slate-700 p-6 rounded-xl mb-12 space-y-6">
+          <div className="bg-slate-800/40 border border-slate-700 p-6 rounded-xl mb-8 space-y-6">
               <div className="flex items-center gap-2 mb-2 text-indigo-400">
                   <TrendingUp size={18} />
                   <h4 className="font-bold">תזמון שינוי ריבית</h4>
@@ -85,9 +85,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, setSet
                       onChange={e => setSettings({...settings, primeRateChangeDate: e.target.value})}
                   />
               </div>
-              <p className="text-xs text-slate-500">
-                  * המערכת תשתמש בריבית הקודמת עבור כל התנועות שמועדן חל לפני התאריך הנבחר, ובריבית הנוכחית החל מתאריך זה.
-              </p>
+          </div>
+
+          {/* Teams Integration */}
+          <div className="bg-indigo-900/10 border border-indigo-500/20 p-6 rounded-xl mb-8 space-y-4">
+              <div className="flex items-center gap-2 mb-2 text-indigo-400">
+                  <MessageSquare size={18} />
+                  <h4 className="font-bold">Microsoft Teams Integration</h4>
+              </div>
+              <div className="flex flex-col gap-2">
+                  <Input 
+                      label='Teams Webhook URL'
+                      type="text"
+                      className="text-left font-mono text-xs ltr"
+                      placeholder="https://outlook.office.com/webhook/..."
+                      value={settings.teamsWebhookUrl || ''}
+                      onChange={e => setSettings({...settings, teamsWebhookUrl: e.target.value})}
+                  />
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                      כדי להגדיר: בתוך ערוץ ה-Teams, לחץ על ה-"+" בחלק העליון להוספת טאב, חפש "Incoming Webhook", הגדר שם לבוט והעתק את הקישור שנוצר לכאן.
+                  </p>
+              </div>
           </div>
 
           <div className="mb-12">
@@ -101,9 +119,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, setSet
                  value={settings.cpi}
                  onChange={e => setSettings({...settings, cpi: Number(e.target.value)})}
               />
-              <p className="text-xs text-slate-500 mt-2">
-                  * נתון זה משמש לחישוב סכומים צמודים (כגון שכירויות). השינוי יחול על כל התקופות בסימולציה.
-              </p>
           </div>
 
           <div className="border-t border-slate-800 pt-8">
@@ -113,7 +128,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, setSet
               </div>
 
               <div className="flex flex-col md:flex-row gap-4">
-                  
                   <div className="flex-1">
                       <input 
                         type="file" 
@@ -130,7 +144,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, setSet
                           טעינת דוח מלא (שחזור)
                       </button>
                   </div>
-
                   <div className="flex-1">
                       <button 
                         onClick={handleExport}
@@ -140,7 +153,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ settings, setSet
                           ייצוא דוח מלא (גיבוי)
                       </button>
                   </div>
-
               </div>
           </div>
       </Card>

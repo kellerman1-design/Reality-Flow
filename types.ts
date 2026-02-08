@@ -150,6 +150,7 @@ export interface GlobalSettings {
   primeRateChangeDate?: string; // When the change occurred/occurs
   vatRate: number;
   cpi: number; // Consumer Price Index
+  teamsWebhookUrl?: string; // MS Teams Webhook URL
 }
 
 // Simulation Types
