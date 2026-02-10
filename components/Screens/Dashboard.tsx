@@ -4,7 +4,8 @@ import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
 import { Card, KPICard, Modal, MultiSelect, Select } from '../UI/SharedComponents';
 import { DailySimulationResult, Entity, Account, Task, Loan, Lease, Guarantee, Transaction, GlobalSettings } from '../../types';
 import { formatCurrency, formatDate, addDays } from '../../utils';
-import { TrendingUp, Wallet, Activity, Table, CreditCard, Briefcase, Bell, Calendar, AlertTriangle, Coins, ArrowDownRight, ShieldAlert, ArrowRightLeft, ClipboardList, Shield, Key, Landmark, Filter, ShoppingCart, Tag, Info, Zap, Send, Loader2, Share2 } from 'lucide-react';
+import { TrendingUp, Wallet, Activity, Table, CreditCard, Briefcase, Bell, Calendar, AlertTriangle, Coins, ArrowDownRight, ShieldAlert, ArrowRightLeft, ClipboardList, Shield, Key, Landmark, Filter, ShoppingCart, Tag, Info, Zap, Send, Loader2, Share2, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface DashboardProps {
   simulationResults: DailySimulationResult[];
@@ -316,6 +317,64 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
         }
     };
 
+    const exportMatrixToExcel = () => {
+        try {
+            const header = ['סעיף', ...displayData.map(m => m.label)];
+            const rows: any[][] = [header];
+
+            const addRow = (label: string, field: string | ((m: any) => number)) => {
+                const row = [label];
+                displayData.forEach(m => {
+                    const val = typeof field === 'function' ? field(m) : m[field];
+                    row.push(val);
+                });
+                rows.push(row);
+            };
+
+            addRow('יתרת פתיחה עו"ש', 'openingBalance');
+            addRow('מסגרת פנויה (פתיחה)', 'openingAvailableCredit');
+            rows.push(['הכנסות מפעילות']);
+            addRow('שכירות', 'rentIncome');
+            addRow('הכנסות אחרות', 'otherIncome');
+            addRow('מע"מ (הכנסות)', 'vatIncome');
+            addRow('סה"כ הכנסות', m => m.rentIncome + m.otherIncome + m.vatIncome);
+            rows.push(['הוצאות מפעילות']);
+            addRow('ספקים', 'suppliers');
+            addRow('הוצאות אחרות', 'otherExpense');
+            addRow('מס הכנסה', 'tax');
+            addRow('מע"מ (הוצאות)', 'vatExpense');
+            addRow('סה"כ הוצאות', m => m.suppliers + m.otherExpense + m.tax + m.vatExpense);
+            rows.push(['פעילות השקעה']);
+            addRow('מכירת נכסים', 'assetSale');
+            addRow('רכישת נכסים', 'assetPurchase');
+            addRow('תזרים תפעולי והשקעה נטו', m => (m.rentIncome + m.otherIncome + m.vatIncome) + (m.suppliers + m.otherExpense + m.tax + m.vatExpense) + (m.assetSale + m.assetPurchase));
+            rows.push(['פעילות מימונית']);
+            addRow('קבלת הלוואות', 'loanReceipt');
+            addRow('החזר הלוואות', 'loanRepayment');
+            addRow('ריבית', 'interest');
+            addRow('הון בעלים / משקיעים', 'capital');
+            addRow('סה"כ מימון', m => m.loanReceipt + m.loanRepayment + m.interest + m.capital);
+            addRow('יתרה לפני איזון', m => {
+                const netOpInv = (m.rentIncome + m.otherIncome + m.vatIncome) + (m.suppliers + m.otherExpense + m.tax + m.vatExpense) + (m.assetSale + m.assetPurchase);
+                const netFinancing = m.loanReceipt + m.loanRepayment + m.interest + m.capital;
+                return m.openingBalance + netOpInv + netFinancing;
+            });
+            addRow('איזון אשראי', 'creditBalancing');
+            addRow('יתרת סגירה', 'closingBalance');
+            addRow('מסגרת פנויה (סגירה)', 'closingAvailableCredit');
+
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "CashFlowMatrix");
+            
+            const fileName = `RealityFlow_Matrix_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        } catch (error) {
+            console.error('Export Error:', error);
+            alert('שגיאה בייצוא המטריצה.');
+        }
+    };
+
     const Cell = ({ value, onClick, className }: any) => {
         const isActive = Math.abs(value) > 0.01;
         const cellClass = `p-3 text-center whitespace-nowrap transition-colors ${isActive ? 'cursor-pointer hover:bg-indigo-500/10 hover:text-white' : 'cursor-default text-slate-500'} ${className}`;
@@ -330,12 +389,21 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
                         <Table className="text-indigo-400" />
                         <h3 className="text-lg font-bold text-slate-100">מטריצת תזרים מזומנים {selectedEntityIds.includes('all') ? ' (מאוחד מלא)' : ' (מותאם)'}</h3>
                     </div>
-                    <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 self-end md:self-auto shrink-0">
-                        {['daily', 'weekly', 'monthly', 'yearly'].map(m => (
-                            <button key={m} onClick={() => setViewMode(m as ViewMode)} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === m ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                                {m === 'daily' ? 'יומי' : m === 'weekly' ? 'שבועי' : m === 'monthly' ? 'חודשי' : 'שנתי'}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={exportMatrixToExcel}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-lg active:scale-95"
+                        >
+                            <FileSpreadsheet size={14} />
+                            <span>ייצוא לאקסל</span>
+                        </button>
+                        <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 self-end md:self-auto shrink-0">
+                            {['daily', 'weekly', 'monthly', 'yearly'].map(m => (
+                                <button key={m} onClick={() => setViewMode(m as ViewMode)} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === m ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                                    {m === 'daily' ? 'יומי' : m === 'weekly' ? 'שבועי' : m === 'monthly' ? 'חודשי' : 'שנתי'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
                 {/* To show scrollbar on the right in RTL: Use dir="ltr" on container and dir="rtl" on table */}
