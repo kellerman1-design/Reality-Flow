@@ -162,10 +162,10 @@ const App: React.FC = () => {
             <div className="flex items-center justify-between gap-3 bg-slate-950/50 p-3 rounded-xl border border-slate-800">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                        בב
+                        שמ
                     </div>
                     <div className="text-right">
-                        <div className="text-sm font-bold text-white">ביצה ביצתי</div>
+                        <div className="text-sm font-bold text-white">שם משתמש</div>
                         <div className="text-xs text-slate-500">CFO</div>
                     </div>
                 </div>
