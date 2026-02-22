@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, ReferenceLine } from 'recharts';
 import { Card, KPICard, Modal, MultiSelect, Select } from '../UI/SharedComponents';
 import { DailySimulationResult, Entity, Account, Task, Loan, Lease, Guarantee, Transaction, GlobalSettings } from '../../types';
@@ -21,6 +21,7 @@ interface DashboardProps {
 }
 
 const fmt = (num: number) => {
+  if (!isFinite(num)) return '-';
   const formatted = new Intl.NumberFormat('he-IL', { maximumFractionDigits: 0 }).format(Math.abs(num));
   return num < 0 ? `(${formatted})` : formatted;
 };
@@ -75,6 +76,7 @@ const getConsolidatedWeight = (id: string, entities: Entity[]): number => {
 const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, accounts, weightedMap, selectedEntityIds, vatRate }) => {
     const [viewMode, setViewMode] = useState<ViewMode>('monthly');
     const [drillDownData, setDrillDownData] = useState<DrillDownState | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -196,6 +198,17 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
     }, [data, viewMode, weightedMap, accounts, entities]);
 
     const displayData = aggregatedData;
+
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            const container = scrollContainerRef.current;
+            // Small delay to ensure the table has rendered and layout is stable
+            const timer = setTimeout(() => {
+                container.scrollLeft = container.scrollWidth;
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [displayData]);
 
     const handleBalanceDrillDown = (periodKey: string, dateInGroup: string, isClosing: boolean = false) => {
         const dayResult = data.find(d => d.date === dateInGroup);
@@ -408,6 +421,7 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
                 </div>
                 {/* To show scrollbar on the right in RTL: Use dir="ltr" on container and dir="rtl" on table */}
                 <div 
+                    ref={scrollContainerRef}
                     className="overflow-auto w-full max-h-[600px] custom-scrollbar" 
                     dir="ltr" 
                     style={{ scrollbarGutter: 'stable' }}
@@ -587,8 +601,9 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
                                         <tbody className="divide-y divide-slate-800/50">
                                             {audit.sources.map((src: any, sIdx: number) => {
                                                 const rateDecimal = vatRate / 100;
+                                                const divisor = 1 + rateDecimal;
                                                 const grossAmount = Math.abs(src.amount);
-                                                const vatPart = grossAmount - (grossAmount / (1 + rateDecimal));
+                                                const vatPart = divisor !== 0 ? grossAmount - (grossAmount / divisor) : 0;
                                                 const isIncome = src.amount > 0 || src.type === 'income';
                                                 return (
                                                     <tr key={sIdx} className="hover:bg-slate-900/30">
@@ -609,8 +624,9 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
                                                 <td className="px-3 py-2 font-black text-white" dir="ltr">
                                                     {formatCurrency(audit.sources.reduce((acc: number, src: any) => {
                                                         const rateDecimal = vatRate / 100;
+                                                        const divisor = 1 + rateDecimal;
                                                         const gross = Math.abs(src.amount);
-                                                        const v = gross - (gross / (1 + rateDecimal));
+                                                        const v = divisor !== 0 ? gross - (gross / divisor) : 0;
                                                         return acc + (src.amount > 0 ? v : -v);
                                                     }, 0))}
                                                 </td>
@@ -640,7 +656,7 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entities, accounts, tasks, loans, leases, guarantees, settings, selectedEntityIds, setSelectedEntityIds }) => {
-    const [chartRange, setChartRange] = useState<number>(180); 
+    const [chartRange, setChartRange] = useState<number>(365); 
     const [alertFilter, setAlertFilter] = useState<AlertCategory>('all');
     const [isSyncingTeams, setIsSyncingTeams] = useState(false);
 

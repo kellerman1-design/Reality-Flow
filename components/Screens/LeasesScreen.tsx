@@ -103,7 +103,8 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
     const nextSqm = updates.leasedSqm !== undefined ? updates.leasedSqm : formData.leasedSqm;
     const nextRate = updates.ratePerSqm !== undefined ? updates.ratePerSqm : formData.ratePerSqm;
     const nextNet = nextSqm * nextRate;
-    setFormData(prev => ({ ...prev, ...updates, netAmount: nextNet || prev.netAmount }));
+    const finalNet = isFinite(nextNet) ? nextNet : 0;
+    setFormData(prev => ({ ...prev, ...updates, netAmount: finalNet || prev.netAmount }));
   };
 
   /**

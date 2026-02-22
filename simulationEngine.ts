@@ -219,9 +219,9 @@ const preGenerateLeaseTransactions = (leases: Lease[], simStartDate: Date, days:
 
             const totalDaysInPeriod = (firstStandardDate.getTime() - periodStart.getTime()) / (1000*60*60*24);
             const activeDays = (firstStandardDate.getTime() - leaseStart.getTime()) / (1000*60*60*24);
-            const proRataAmount = adjustedBaseAmount * (activeDays / totalDaysInPeriod);
+            const proRataAmount = totalDaysInPeriod > 0 ? adjustedBaseAmount * (activeDays / totalDaysInPeriod) : 0;
             
-            if (leaseStart <= simEndDate && leaseStart >= simStartDate) {
+            if (leaseStart <= simEndDate && leaseStart >= simStartDate && proRataAmount > 0) {
                 generated.push({
                     id: `gen-lease-prorata-${lease.id}`,
                     entityId: lease.entityId,
@@ -273,7 +273,7 @@ const preGenerateLeaseTransactions = (leases: Lease[], simStartDate: Date, days:
     return generated;
 };
 
-export const runSimulation = (state: AppState, daysToRun: number = 730): DailySimulationResult[] => {
+export const runSimulation = (state: AppState, daysToRun: number = 1095): DailySimulationResult[] => {
   const results: DailySimulationResult[] = [];
   const today = new Date();
   today.setHours(0,0,0,0);
