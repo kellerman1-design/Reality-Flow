@@ -47,6 +47,7 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
     attachments: []
   };
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Lease>(initialFormState);
   const [isLinked, setIsLinked] = useState(false);
 
@@ -91,7 +92,10 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => { if (confirm('האם אתה בטוח?')) setLeases(prev => prev.filter(l => l.id !== id)); };
+  const handleDelete = (id: string) => {
+    setLeases(prev => prev.filter(l => l.id !== id));
+    setDeleteConfirmId(null);
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) { const files = Array.from(e.target.files); const processed = await Promise.all(files.map(processFile)); setNewAttachments(prev => [...prev, ...processed]); } };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
@@ -198,7 +202,34 @@ export const LeasesScreen: React.FC<LeasesScreenProps> = ({ leases, setLeases, e
          <div className="flex gap-4 items-center w-full md:w-auto flex-1"><div className="relative flex-1 max-w-xs"><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} /><input type="text" placeholder="חפש לפי שם נכס או שוכר..." className="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 pr-10 pl-4 text-sm text-white focus:outline-none focus:border-indigo-500" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div><div className="w-48"><Select options={[{value: 'all', label: 'כל הישויות (מאוחד)'}, ...entities.map(e => ({value: e.id, label: e.name}))]} value={selectedEntityId} onChange={e => setSelectedEntityId(e.target.value)} className="py-1.5" /></div></div>
          <div className="flex gap-3"><input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleExcelUpload} /><Button variant="secondary" onClick={() => fileInputRef.current?.click()} icon={<FileSpreadsheet size={18} className="text-emerald-500" />} className="border-emerald-500/30 hover:bg-emerald-500/10">ייבוא (Excel)</Button><Button onClick={() => handleOpenModal()} icon={<Plus size={18} />}>הוספה</Button></div>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 shadow-xl"><table className="w-full text-sm text-right text-slate-300"><thead className="bg-slate-950 text-slate-400 uppercase text-xs"><tr><th className="px-6 py-4">שם השוכר</th><th className="px-6 py-4">שם הנכס</th><th className="px-6 py-4">סוג</th><th className="px-6 py-4">סכום</th><th className="px-6 py-4">תחילת שכירות</th><th className="px-6 py-4">סיום שכירות</th><th className="px-6 py-4 text-left">פעולות</th></tr></thead><tbody className="divide-y divide-slate-800/70">{filteredLeases.map(lease => (<tr key={lease.id} className="hover:bg-slate-800/40 transition-colors group"><td className="px-6 py-4 font-bold text-white"><div className="flex flex-col"><span>{lease.tenantName}</span>{lease.attachments && lease.attachments.length > 0 && (<span className="text-[10px] text-indigo-400 flex items-center gap-1 mt-1"><Paperclip size={10} /> {lease.attachments.length} קבצים</span>)}</div></td><td className="px-6 py-4 text-slate-400">{lease.property}</td><td className="px-6 py-4 text-xs font-medium text-slate-500">{lease.leaseType || 'שכירות'}</td><td className="px-6 py-4 font-medium text-emerald-400" dir="ltr">{formatCurrency(lease.netAmount)}</td><td className="px-6 py-4">{formatDate(lease.startDate)}</td><td className="px-6 py-4">{formatDate(lease.endDate)}</td><td className="px-6 py-4 text-left"><div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleOpenModal(lease)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"><Edit2 size={16}/></button><button onClick={() => handleDelete(lease.id)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-rose-500"><Trash2 size={16}/></button></div></td></tr>))}</tbody></table></div>
+      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 shadow-xl"><table className="w-full text-sm text-right text-slate-300"><thead className="bg-slate-950 text-slate-400 uppercase text-xs"><tr><th className="px-6 py-4">שם השוכר</th><th className="px-6 py-4">שם הנכס</th><th className="px-6 py-4">סוג</th><th className="px-6 py-4">סכום</th><th className="px-6 py-4">תחילת שכירות</th><th className="px-6 py-4">סיום שכירות</th><th className="px-6 py-4 text-left">פעולות</th></tr></thead><tbody className="divide-y divide-slate-800/70">{filteredLeases.map(lease => (<tr key={lease.id} className="hover:bg-slate-800/40 transition-colors group"><td className="px-6 py-4 font-bold text-white"><div className="flex flex-col"><span>{lease.tenantName}</span>{lease.attachments && lease.attachments.length > 0 && (<span className="text-[10px] text-indigo-400 flex items-center gap-1 mt-1"><Paperclip size={10} /> {lease.attachments.length} קבצים</span>)}</div></td><td className="px-6 py-4 text-slate-400">{lease.property}</td><td className="px-6 py-4 text-xs font-medium text-slate-500">{lease.leaseType || 'שכירות'}</td><td className="px-6 py-4 font-medium text-emerald-400" dir="ltr">{formatCurrency(lease.netAmount)}</td><td className="px-6 py-4">{formatDate(lease.startDate)}</td><td className="px-6 py-4">{formatDate(lease.endDate)}</td><td className="px-6 py-4 text-left">
+  <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+    <button 
+      type="button"
+      onClick={(e) => { e.stopPropagation(); handleOpenModal(lease); }} 
+      className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
+    >
+      <Edit2 size={16}/>
+    </button>
+    <button 
+      type="button"
+      onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(lease.id); }} 
+      className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-rose-500"
+    >
+      <Trash2 size={16}/>
+    </button>
+  </div>
+</td></tr>))}</tbody></table></div>
+
+<Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="אישור מחיקה">
+  <div className="p-4 text-center">
+      <p className="text-slate-300 mb-6">האם אתה בטוח שברצונך למחוק חוזה שכירות זה? פעולה זו אינה ניתנת לביטול.</p>
+      <div className="flex justify-center gap-4">
+          <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>ביטול</Button>
+          <Button onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-rose-600 hover:bg-rose-700">מחק חוזה</Button>
+      </div>
+  </div>
+</Modal>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingLease ? 'עריכת חוזה שכירות' : 'הוספת חוזה שכירות'}>
         <div className="flex flex-col-reverse md:flex-row gap-6">
           <div className="w-full md:w-1/3 flex flex-col gap-4">

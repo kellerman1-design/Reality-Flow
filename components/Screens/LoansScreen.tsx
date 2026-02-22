@@ -41,6 +41,7 @@ export const LoansScreen: React.FC<LoansScreenProps> = ({ loans, setLoans, entit
     attachments: []
   };
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Loan>(initialFormState);
 
   // Business Logic: Identify loans expiring in the next 30 days (Includes inactive as requested)
@@ -94,7 +95,10 @@ export const LoansScreen: React.FC<LoansScreenProps> = ({ loans, setLoans, entit
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => { if (confirm('האם אתה בטוח שברצונך למחוק הלוואה זו?')) setLoans(prev => prev.filter(l => l.id !== id)); };
+  const handleDelete = (id: string) => {
+    setLoans(prev => prev.filter(l => l.id !== id));
+    setDeleteConfirmId(null);
+  };
 
   const toggleStatus = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -205,10 +209,31 @@ export const LoansScreen: React.FC<LoansScreenProps> = ({ loans, setLoans, entit
                     </button>
                 </td>
                 <td className="px-6 py-4 text-left">
-                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleDuplicate(loan)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-indigo-400" title="שכפל הלוואה"><Copy size={16}/></button>
-                    <button onClick={() => handleOpenModal(loan)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="ערוך הלוואה"><Edit2 size={16}/></button>
-                    <button onClick={() => handleDelete(loan.id)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-rose-500" title="מחק הלוואה"><Trash2 size={16}/></button>
+                  <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDuplicate(loan); }} 
+                      className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-indigo-400" 
+                      title="שכפל הלוואה"
+                    >
+                      <Copy size={16}/>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleOpenModal(loan); }} 
+                      className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white" 
+                      title="ערוך הלוואה"
+                    >
+                      <Edit2 size={16}/>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(loan.id); }} 
+                      className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-rose-500" 
+                      title="מחק הלוואה"
+                    >
+                      <Trash2 size={16}/>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -216,6 +241,16 @@ export const LoansScreen: React.FC<LoansScreenProps> = ({ loans, setLoans, entit
           </tbody>
         </table>
       </div>
+
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="אישור מחיקה">
+        <div className="p-4 text-center">
+            <p className="text-slate-300 mb-6">האם אתה בטוח שברצונך למחוק הלוואה זו? פעולה זו אינה ניתנת לביטול.</p>
+            <div className="flex justify-center gap-4">
+                <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>ביטול</Button>
+                <Button onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-rose-600 hover:bg-rose-700">מחק הלוואה</Button>
+            </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingLoan ? 'עריכת הלוואה' : 'הוספת הלוואה'}>
         <div className="flex flex-col-reverse md:flex-row gap-8">

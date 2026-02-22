@@ -25,6 +25,7 @@ export const EntitiesScreen: React.FC<EntitiesScreenProps> = ({ entities, setEnt
   };
 
   const [formData, setFormData] = useState<Entity>(initialFormState);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const handleOpenModal = (entity?: Entity) => {
     if (entity) {
@@ -47,9 +48,8 @@ export const EntitiesScreen: React.FC<EntitiesScreenProps> = ({ entities, setEnt
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('האם אתה בטוח שברצונך למחוק ישות זו?')) {
-      setEntities(prev => prev.filter(e => e.id !== id));
-    }
+    setEntities(prev => prev.filter(e => e.id !== id));
+    setDeleteConfirmId(null);
   };
 
   return (
@@ -62,9 +62,21 @@ export const EntitiesScreen: React.FC<EntitiesScreenProps> = ({ entities, setEnt
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {entities.map(entity => (
           <Card key={entity.id} className="relative group">
-            <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-               <button onClick={() => handleOpenModal(entity)} className="p-2 bg-slate-800 rounded-full hover:bg-indigo-600 transition-colors"><Edit2 size={14}/></button>
-               <button onClick={() => handleDelete(entity.id)} className="p-2 bg-slate-800 rounded-full hover:bg-rose-600 transition-colors"><Trash2 size={14}/></button>
+            <div className="absolute top-4 left-4 flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+               <button 
+                 type="button"
+                 onClick={(e) => { e.stopPropagation(); handleOpenModal(entity); }} 
+                 className="p-2 bg-slate-800 rounded-full hover:bg-indigo-600 transition-colors"
+               >
+                 <Edit2 size={14}/>
+               </button>
+               <button 
+                 type="button"
+                 onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(entity.id); }} 
+                 className="p-2 bg-slate-800 rounded-full hover:bg-rose-600 transition-colors"
+               >
+                 <Trash2 size={14}/>
+               </button>
             </div>
             <h3 className="text-xl font-bold text-white mb-2">{entity.name}</h3>
             <div className="space-y-2 text-sm text-slate-400">
@@ -96,6 +108,16 @@ export const EntitiesScreen: React.FC<EntitiesScreenProps> = ({ entities, setEnt
           </Card>
         ))}
       </div>
+
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="אישור מחיקה">
+        <div className="p-4 text-center">
+            <p className="text-slate-300 mb-6">האם אתה בטוח שברצונך למחוק ישות זו? פעולה זו תמחק גם את כל הנתונים הקשורים אליה.</p>
+            <div className="flex justify-center gap-4">
+                <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>ביטול</Button>
+                <Button onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-rose-600 hover:bg-rose-700">מחק ישות</Button>
+            </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingEntity ? 'ערוך ישות' : 'ישות חדשה'}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -61,6 +61,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ transact
 
   const [formData, setFormData] = useState<Transaction>(initialFormState);
   const [isLinked, setIsLinked] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLinked((formData.linkageIndexBase || 0) > 0);
@@ -384,10 +385,31 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ transact
                                 </button>
                             </td>
                             <td className="px-6 py-4 text-left">
-                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleDuplicate(tx)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-indigo-400" title="שכפל תנועה"><Copy size={16} /></button>
-                                    <button onClick={() => handleOpenModal(tx)} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="ערוך תנועה"><Edit2 size={16} /></button>
-                                    <button onClick={() => setTransactions(prev => prev.filter(t => t.id !== tx.id))} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-rose-500" title="מחק תנועה"><Trash2 size={16} /></button>
+                                <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); handleDuplicate(tx); }} 
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-indigo-400" 
+                                        title="שכפל תנועה"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); handleOpenModal(tx); }} 
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white" 
+                                        title="ערוך תנועה"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(tx.id); }} 
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-rose-500" 
+                                        title="מחק תנועה"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -396,6 +418,21 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ transact
             </tbody>
         </table>
       </div>
+
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="אישור מחיקה">
+        <div className="p-4 text-center">
+            <p className="text-slate-300 mb-6">האם אתה בטוח שברצונך למחוק תנועה זו? פעולה זו אינה ניתנת לביטול.</p>
+            <div className="flex justify-center gap-4">
+                <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>ביטול</Button>
+                <Button onClick={() => {
+                    if (deleteConfirmId) {
+                        setTransactions(prev => prev.filter(t => t.id !== deleteConfirmId));
+                        setDeleteConfirmId(null);
+                    }
+                }} className="bg-rose-600 hover:bg-rose-700">מחק תנועה</Button>
+            </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingTransaction ? 'עריכת תנועה' : 'הוספת תנועה'}>
          <div className="flex flex-col gap-6 text-right">
