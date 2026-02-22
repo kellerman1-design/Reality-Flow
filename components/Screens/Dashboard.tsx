@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, ReferenceLine } from 'recharts';
 import { Card, KPICard, Modal, MultiSelect, Select } from '../UI/SharedComponents';
 import { DailySimulationResult, Entity, Account, Task, Loan, Lease, Guarantee, Transaction, GlobalSettings } from '../../types';
@@ -75,7 +75,6 @@ const getConsolidatedWeight = (id: string, entities: Entity[]): number => {
 const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, accounts, weightedMap, selectedEntityIds, vatRate }) => {
     const [viewMode, setViewMode] = useState<ViewMode>('monthly');
     const [drillDownData, setDrillDownData] = useState<DrillDownState | null>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -197,12 +196,6 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
     }, [data, viewMode, weightedMap, accounts, entities]);
 
     const displayData = aggregatedData;
-
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
-        }
-    }, [displayData]);
 
     const handleBalanceDrillDown = (periodKey: string, dateInGroup: string, isClosing: boolean = false) => {
         const dayResult = data.find(d => d.date === dateInGroup);
@@ -415,7 +408,6 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
                 </div>
                 {/* To show scrollbar on the right in RTL: Use dir="ltr" on container and dir="rtl" on table */}
                 <div 
-                    ref={scrollContainerRef}
                     className="overflow-auto w-full max-h-[600px] custom-scrollbar" 
                     dir="ltr" 
                     style={{ scrollbarGutter: 'stable' }}
@@ -648,7 +640,7 @@ const CashFlowMatrix: React.FC<CashFlowMatrixProps> = ({ data, entities, account
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ simulationResults, entities, accounts, tasks, loans, leases, guarantees, settings, selectedEntityIds, setSelectedEntityIds }) => {
-    const [chartRange, setChartRange] = useState<number>(365); 
+    const [chartRange, setChartRange] = useState<number>(180); 
     const [alertFilter, setAlertFilter] = useState<AlertCategory>('all');
     const [isSyncingTeams, setIsSyncingTeams] = useState(false);
 
